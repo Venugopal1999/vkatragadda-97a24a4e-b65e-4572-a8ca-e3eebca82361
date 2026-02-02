@@ -59,6 +59,16 @@
           "buildTarget": "api:build:production"
         }
       }
+    },
+    "seed": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "npx tsc -p api/tsconfig.seed.json",
+          "node dist/api/seed/database/seed.js"
+        ],
+        "parallel": false
+      }
     }
   },
   "tags": []
