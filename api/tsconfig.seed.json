@@ -1,11 +1,19 @@
 {
-  "extends": "./tsconfig.app.json",
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2021",
     "outDir": "../dist/api/seed",
-    "rootDir": "./src"
+    "rootDir": "..",
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true
   },
   "include": [
     "src/database/seed.ts",
-    "src/entities/**/*.ts"
+    "src/database/seed-bootstrap.js",
+    "src/entities/**/*.ts",
+    "../auth/src/**/*.ts"
   ]
 }

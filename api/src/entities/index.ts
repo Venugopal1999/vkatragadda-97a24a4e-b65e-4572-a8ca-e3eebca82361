@@ -1,5 +1,4 @@
-// Enums
-export * from './enums/role.enum';
+// Enums (Role is exported from @turbovets-fullstack/auth)
 export * from './enums/task-status.enum';
 export * from './enums/task-category.enum';
 export * from './enums/audit-action.enum';

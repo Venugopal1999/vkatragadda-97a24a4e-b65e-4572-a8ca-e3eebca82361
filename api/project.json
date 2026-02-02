@@ -65,7 +65,8 @@
       "options": {
         "commands": [
           "npx tsc -p api/tsconfig.seed.json",
-          "node dist/api/seed/database/seed.js"
+          "cp api/src/database/seed-bootstrap.js dist/api/seed/api/src/database/",
+          "node dist/api/seed/api/src/database/seed-bootstrap.js"
         ],
         "parallel": false
       }

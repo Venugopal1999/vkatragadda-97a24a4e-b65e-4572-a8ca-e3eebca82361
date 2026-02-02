@@ -1,11 +1,11 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Role } from '../../../auth/src';
 import {
   Organization,
   User,
   Task,
   AuditLog,
-  Role,
   TaskStatus,
   TaskCategory,
 } from '../entities';

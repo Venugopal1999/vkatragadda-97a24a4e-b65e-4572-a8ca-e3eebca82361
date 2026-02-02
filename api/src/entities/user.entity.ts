@@ -9,7 +9,7 @@ import {
   Index,
 } from 'typeorm';
 import { Organization } from './organization.entity';
-import { Role } from './enums/role.enum';
+import { Role } from '@turbovets-fullstack/auth';
 
 @Entity('users')
 export class User {
