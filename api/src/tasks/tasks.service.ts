@@ -7,7 +7,8 @@ import {
   canAccessOrg,
   OrgReference,
 } from '@turbovets-fullstack/auth';
-import { Task, Organization, TaskCategory } from '../entities';
+import { Task, Organization, TaskCategory, TaskStatus } from '../entities';
+import { TasksQueryDto } from './dto/tasks-query.dto';
 
 @Injectable()
 export class TasksService {
@@ -47,13 +48,25 @@ export class TasksService {
   /**
    * Find all tasks the user can access (org-scoped).
    */
-  async findAll(user: RequestUser): Promise<Task[]> {
+  async findAll(user: RequestUser, query?: TasksQueryDto): Promise<Task[]> {
     const { allowedOrgIds } = await this.getOrgScope(user);
 
-    return this.taskRepo.find({
-      where: { organizationId: In(allowedOrgIds) },
-      order: { organizationId: 'ASC', position: 'ASC' },
-    });
+    const qb = this.taskRepo
+      .createQueryBuilder('task')
+      .where('task.organizationId IN (:...orgIds)', { orgIds: allowedOrgIds });
+
+    // Apply filters
+    if (query?.status) {
+      qb.andWhere('task.status = :status', { status: query.status });
+    }
+    if (query?.category) {
+      qb.andWhere('task.category = :category', { category: query.category });
+    }
+
+    // Order by org, then position
+    qb.orderBy('task.organizationId', 'ASC').addOrderBy('task.position', 'ASC');
+
+    return qb.getMany();
   }
 
   /**
