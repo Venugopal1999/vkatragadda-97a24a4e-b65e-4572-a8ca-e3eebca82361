@@ -4,11 +4,13 @@ import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 import { Task, Organization } from '../entities';
 import { AuthModule } from '../auth/auth.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Task, Organization]),
     AuthModule,
+    AuditModule,
   ],
   controllers: [TasksController],
   providers: [TasksService],

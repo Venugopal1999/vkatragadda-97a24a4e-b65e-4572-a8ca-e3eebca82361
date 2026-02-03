@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -16,6 +17,7 @@ import {
 import { Role, Roles, RolesGuard, RequestUser } from '@turbovets-fullstack/auth';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuditInterceptor } from '../audit/audit.interceptor';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -23,6 +25,7 @@ import { TasksQueryDto } from './dto/tasks-query.dto';
 
 @Controller('tasks')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@UseInterceptors(AuditInterceptor)
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
