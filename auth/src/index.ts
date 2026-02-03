@@ -12,3 +12,6 @@ export * from './lib/decorators/roles.decorator';
 
 // Guards
 export * from './lib/guards/roles.guard';
+
+// Helpers
+export * from './lib/helpers/org-scope.helper';
