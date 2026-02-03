@@ -1,0 +1,39 @@
+<div class="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+  <div class="w-full max-w-sm space-y-6">
+    <h2 class="text-center text-2xl font-bold text-gray-900">Sign in to TurboVets</h2>
+
+    @if (error) {
+      <p class="rounded bg-red-50 px-4 py-2 text-sm text-red-600">{{ error }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        />
+      </div>
+
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        />
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="form.invalid || submitting"
+        class="w-full rounded bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+      >
+        {{ submitting ? 'Signing in...' : 'Sign in' }}
+      </button>
+    </form>
+  </div>
+</div>

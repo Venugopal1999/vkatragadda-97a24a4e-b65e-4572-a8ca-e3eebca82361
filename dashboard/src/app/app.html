@@ -1,6 +1,14 @@
 <header class="bg-indigo-600 text-white shadow">
   <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between">
     <h1 class="text-lg font-semibold tracking-tight">{{ title }}</h1>
+    @if (auth.isLoggedIn()) {
+      <button
+        (click)="auth.logout()"
+        class="rounded bg-indigo-500 px-3 py-1 text-sm hover:bg-indigo-400"
+      >
+        Sign out
+      </button>
+    }
   </div>
 </header>
 
