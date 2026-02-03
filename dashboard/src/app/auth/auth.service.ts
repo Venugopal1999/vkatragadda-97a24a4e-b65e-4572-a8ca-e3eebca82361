@@ -9,6 +9,21 @@ interface LoginResponse {
   accessToken: string;
 }
 
+interface JwtPayload {
+  sub: string;
+  role: string;
+  orgId: string;
+}
+
+function decodePayload(token: string): JwtPayload | null {
+  try {
+    const base64 = token.split('.')[1];
+    return JSON.parse(atob(base64));
+  } catch {
+    return null;
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
@@ -18,6 +33,17 @@ export class AuthService {
   );
 
   readonly isLoggedIn = computed(() => this.token() !== null);
+
+  readonly userRole = computed(() => {
+    const t = this.token();
+    if (!t) return null;
+    return decodePayload(t)?.role ?? null;
+  });
+
+  readonly canEdit = computed(() => {
+    const role = this.userRole();
+    return role === 'OWNER' || role === 'ADMIN';
+  });
 
   getToken(): string | null {
     return this.token();

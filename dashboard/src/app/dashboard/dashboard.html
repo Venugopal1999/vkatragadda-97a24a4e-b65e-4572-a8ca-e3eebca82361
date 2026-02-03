@@ -1,0 +1,155 @@
+<!-- Toolbar: filters + add button -->
+<div class="mb-6 flex flex-wrap items-center gap-3">
+  <select
+    [ngModel]="statusFilter()"
+    (ngModelChange)="statusFilter.set($event); loadTasks()"
+    class="rounded border border-gray-300 px-3 py-1.5 text-sm"
+  >
+    <option value="">All statuses</option>
+    <option value="TODO">Todo</option>
+    <option value="IN_PROGRESS">In Progress</option>
+    <option value="DONE">Done</option>
+  </select>
+
+  <select
+    [ngModel]="categoryFilter()"
+    (ngModelChange)="categoryFilter.set($event); loadTasks()"
+    class="rounded border border-gray-300 px-3 py-1.5 text-sm"
+  >
+    <option value="">All categories</option>
+    <option value="WORK">Work</option>
+    <option value="PERSONAL">Personal</option>
+  </select>
+
+  @if (auth.canEdit()) {
+    <button
+      (click)="openModal()"
+      class="ml-auto rounded bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
+    >
+      + New task
+    </button>
+  }
+</div>
+
+<!-- Task list with drag-drop -->
+@if (tasks().length === 0) {
+  <p class="text-gray-500">No tasks found.</p>
+} @else {
+  <ul
+    cdkDropList
+    (cdkDropListDropped)="onDrop($event)"
+    [cdkDropListDisabled]="!auth.canEdit()"
+    class="space-y-2"
+  >
+    @for (task of tasks(); track task.id) {
+      <li
+        cdkDrag
+        class="flex items-center justify-between rounded border border-gray-200 bg-white px-4 py-3 shadow-sm"
+        [class.cursor-grab]="auth.canEdit()"
+      >
+        <div class="min-w-0 flex-1">
+          <p class="truncate font-medium text-gray-900">{{ task.title }}</p>
+          <p class="mt-0.5 text-xs text-gray-500">
+            {{ task.status }}
+            @if (task.category) {
+              &middot; {{ task.category }}
+            }
+          </p>
+        </div>
+
+        @if (auth.canEdit()) {
+          <div class="ml-4 flex gap-2">
+            <button
+              (click)="openModal(task)"
+              class="rounded px-2 py-1 text-sm text-indigo-600 hover:bg-indigo-50"
+            >
+              Edit
+            </button>
+            <button
+              (click)="deleteTask(task)"
+              class="rounded px-2 py-1 text-sm text-red-600 hover:bg-red-50"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+}
+
+<!-- Modal backdrop + dialog -->
+@if (modalOpen()) {
+  <div class="fixed inset-0 z-40 bg-black/40" (click)="closeModal()"></div>
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl" (click)="$event.stopPropagation()">
+      <h3 class="mb-4 text-lg font-semibold text-gray-900">
+        {{ editingTask() ? 'Edit task' : 'New task' }}
+      </h3>
+
+      <form [formGroup]="form" (ngSubmit)="saveTask()" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Title</label>
+          <input
+            formControlName="title"
+            class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Description</label>
+          <textarea
+            formControlName="description"
+            rows="3"
+            class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          ></textarea>
+        </div>
+
+        <div class="flex gap-4">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700">Category</label>
+            <select
+              formControlName="category"
+              class="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
+            >
+              <option value="">None</option>
+              <option value="WORK">Work</option>
+              <option value="PERSONAL">Personal</option>
+            </select>
+          </div>
+
+          @if (editingTask()) {
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700">Status</label>
+              <select
+                formControlName="status"
+                class="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
+              >
+                <option value="TODO">Todo</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="DONE">Done</option>
+              </select>
+            </div>
+          }
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            (click)="closeModal()"
+            class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            [disabled]="form.invalid || saving()"
+            class="rounded bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+          >
+            {{ saving() ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
