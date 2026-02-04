@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Role } from '../../../auth/src';
+import { Role } from '@turbovets-fullstack/auth';
 import {
   Organization,
   User,

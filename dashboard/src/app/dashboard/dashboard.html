@@ -80,25 +80,27 @@
 
 <!-- Modal backdrop + dialog -->
 @if (modalOpen()) {
-  <div class="fixed inset-0 z-40 bg-black/40" (click)="closeModal()"></div>
+  <div class="fixed inset-0 z-40 bg-black/40" role="button" tabindex="0" (click)="closeModal()" (keydown.escape)="closeModal()"></div>
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl" (click)="$event.stopPropagation()">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl" role="dialog" tabindex="0" (click)="$event.stopPropagation()" (keydown.escape)="closeModal()">
       <h3 class="mb-4 text-lg font-semibold text-gray-900">
         {{ editingTask() ? 'Edit task' : 'New task' }}
       </h3>
 
       <form [formGroup]="form" (ngSubmit)="saveTask()" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Title</label>
+          <label for="task-title" class="block text-sm font-medium text-gray-700">Title</label>
           <input
+            id="task-title"
             formControlName="title"
             class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Description</label>
+          <label for="task-description" class="block text-sm font-medium text-gray-700">Description</label>
           <textarea
+            id="task-description"
             formControlName="description"
             rows="3"
             class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -107,8 +109,9 @@
 
         <div class="flex gap-4">
           <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700">Category</label>
+            <label for="task-category" class="block text-sm font-medium text-gray-700">Category</label>
             <select
+              id="task-category"
               formControlName="category"
               class="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
             >
@@ -120,8 +123,9 @@
 
           @if (editingTask()) {
             <div class="flex-1">
-              <label class="block text-sm font-medium text-gray-700">Status</label>
+              <label for="task-status" class="block text-sm font-medium text-gray-700">Status</label>
               <select
+                id="task-status"
                 formControlName="status"
                 class="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
               >

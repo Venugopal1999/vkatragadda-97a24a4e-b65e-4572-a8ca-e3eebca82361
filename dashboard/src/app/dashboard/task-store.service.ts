@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, switchMap, tap, EMPTY } from 'rxjs';
+import { BehaviorSubject, tap, retry } from 'rxjs';
 import { TaskService } from './task.service';
 import { Task, TaskStatus, TaskCategory } from './task.model';
 import { moveItemInArray } from '@angular/cdk/drag-drop';
@@ -42,9 +42,14 @@ export class TaskStoreService {
     if (f.status) filters.status = f.status as TaskStatus;
     if (f.category) filters.category = f.category as TaskCategory;
 
-    this.api.findAll(filters).subscribe((tasks) => {
-      this.tasksSubject.next(tasks);
-      this.loadingSubject.next(false);
+    this.api.findAll(filters).pipe(retry({ count: 1, delay: 500 })).subscribe({
+      next: (tasks) => {
+        this.tasksSubject.next(tasks);
+        this.loadingSubject.next(false);
+      },
+      error: () => {
+        this.loadingSubject.next(false);
+      },
     });
   }
 

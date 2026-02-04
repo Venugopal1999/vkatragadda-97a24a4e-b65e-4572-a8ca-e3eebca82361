@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import {
   RequestUser,
   resolveOrgScope,
   canAccessOrg,
   OrgReference,
 } from '@turbovets-fullstack/auth';
-import { Task, Organization, TaskCategory, TaskStatus } from '../entities';
+import { Task, Organization, TaskCategory } from '../entities';
 import { TasksQueryDto } from './dto/tasks-query.dto';
 
 @Injectable()

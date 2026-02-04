@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { CdkDropList, CdkDrag, CdkDragDrop } from '@angular/cdk/drag-drop';
 import { Subscription } from 'rxjs';
@@ -16,6 +16,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   protected readonly auth = inject(AuthService);
   protected readonly store = inject(TaskStoreService);
   private readonly fb = inject(FormBuilder);
+  private readonly cdr = inject(ChangeDetectorRef);
   private sub?: Subscription;
 
   tasks: Task[] = [];
@@ -34,7 +35,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    this.sub = this.store.tasks$.subscribe((t) => (this.tasks = t));
+    this.sub = this.store.tasks$.subscribe((t) => {
+      this.tasks = t;
+      this.cdr.detectChanges();
+    });
     const f = this.store.filters;
     this.statusFilter = f.status;
     this.categoryFilter = f.category;
