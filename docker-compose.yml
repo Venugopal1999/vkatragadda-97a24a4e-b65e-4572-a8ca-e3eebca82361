@@ -1,0 +1,25 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      JWT_SECRET: dev-secret-key
+      JWT_EXPIRES_IN: 1d
+      DATABASE_NAME: /data/taskdb.sqlite
+    volumes:
+      - api-data:/data
+    ports:
+      - "3000:3000"
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
+
+volumes:
+  api-data:
