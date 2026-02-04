@@ -1,8 +1,8 @@
 <!-- Toolbar: filters + add button -->
 <div class="mb-6 flex flex-wrap items-center gap-3">
   <select
-    [ngModel]="statusFilter()"
-    (ngModelChange)="statusFilter.set($event); loadTasks()"
+    [ngModel]="statusFilter"
+    (ngModelChange)="onStatusChange($event)"
     class="rounded border border-gray-300 px-3 py-1.5 text-sm"
   >
     <option value="">All statuses</option>
@@ -12,8 +12,8 @@
   </select>
 
   <select
-    [ngModel]="categoryFilter()"
-    (ngModelChange)="categoryFilter.set($event); loadTasks()"
+    [ngModel]="categoryFilter"
+    (ngModelChange)="onCategoryChange($event)"
     class="rounded border border-gray-300 px-3 py-1.5 text-sm"
   >
     <option value="">All categories</option>
@@ -32,7 +32,7 @@
 </div>
 
 <!-- Task list with drag-drop -->
-@if (tasks().length === 0) {
+@if (tasks.length === 0) {
   <p class="text-gray-500">No tasks found.</p>
 } @else {
   <ul
@@ -41,7 +41,7 @@
     [cdkDropListDisabled]="!auth.canEdit()"
     class="space-y-2"
   >
-    @for (task of tasks(); track task.id) {
+    @for (task of tasks; track task.id) {
       <li
         cdkDrag
         class="flex items-center justify-between rounded border border-gray-200 bg-white px-4 py-3 shadow-sm"
