@@ -1,204 +1,269 @@
-# Secure Task Management System
+# TurboVets Fullstack
 
-A full-stack task management application with role-based access control (RBAC), built with NestJS, Angular, and NX monorepo.
+NX monorepo with a NestJS API, Angular dashboard, and shared auth library. Multi-tenant task management with role-based access control, org-scoped data, and audit logging.
 
-## Setup
+## Tech Stack
 
-### Prerequisites
+| Layer | Technology |
+|-------|-----------|
+| Monorepo | NX 22 |
+| API | NestJS 11, TypeORM 0.3, Passport JWT |
+| Database | SQLite (better-sqlite3) |
+| Frontend | Angular 21, Tailwind CSS 4, Angular CDK |
+| Auth | JWT (bcrypt passwords, role-based guards) |
+| CI | GitHub Actions |
+| Containers | Docker + docker-compose |
 
-- Node.js >= 18
-- npm >= 9
-
-### Installation
+## Quick Start
 
 ```bash
+# Install
 npm install
+
+# Seed the database
+npx ts-node -r ./api/src/database/seed-bootstrap.js ./api/src/database/seed.ts
+
+# Start API (port 3000)
+npx nx serve api
+
+# Start dashboard (port 4200) — in a second terminal
+npx nx serve dashboard
 ```
 
-### Environment Variables
+Open `http://localhost:4200` and log in with a seed user.
 
-Create `.env` in the project root:
+### Docker
 
-```env
-# TODO: Add actual values
-JWT_SECRET=your-secret-key
+```bash
+docker-compose up --build
+```
+
+Dashboard at `http://localhost:4200`, API at `http://localhost:3000/api`.
+
+## Environment Variables
+
+Create a `.env` file in the project root:
+
+```
+JWT_SECRET=dev-secret-key
 JWT_EXPIRES_IN=1d
-DATABASE_TYPE=sqlite
 DATABASE_NAME=taskdb.sqlite
 ```
 
-### Run Applications
-
-| App       | Command                  | URL                        |
-|-----------|--------------------------|----------------------------|
-| API       | `npx nx serve api`       | http://localhost:3000/api  |
-| Dashboard | `npx nx serve dashboard` | http://localhost:4200      |
-
-### Run Tests
-
-```bash
-npx nx test api
-npx nx test dashboard
-npx nx test data
-npx nx test auth
-```
-
----
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `JWT_SECRET` | Secret for signing JWTs | *(required)* |
+| `JWT_EXPIRES_IN` | Token expiry (`1d`, `2h`, `30m`) | `1d` |
+| `DATABASE_NAME` | SQLite file path | `taskdb.sqlite` |
+| `PORT` | API listen port | `3000` |
 
 ## Architecture
 
-### NX Monorepo Structure
-
 ```
-├── api/          # NestJS backend
-├── dashboard/    # Angular frontend
-├── data/         # Shared DTOs & interfaces
-├── auth/         # RBAC guards, decorators, policies
+turbovets-fullstack/
+├── api/                  # NestJS backend
+│   └── src/
+│       ├── auth/         # JWT strategy, guards, login
+│       ├── tasks/        # CRUD controller + service
+│       ├── audit/        # Interceptor + audit log
+│       ├── database/     # TypeORM + SQLite config, seed
+│       └── entities/     # Organization, User, Task, AuditLog
+├── dashboard/            # Angular frontend
+│   └── src/app/
+│       ├── auth/         # AuthService, guard, interceptor
+│       ├── login/        # Login page
+│       └── dashboard/    # Task list, filters, CRUD modal, drag-drop
+├── auth/                 # Shared library (@turbovets-fullstack/auth)
+│   └── src/lib/
+│       ├── enums/        # Role enum
+│       ├── guards/       # RolesGuard
+│       ├── decorators/   # @Roles()
+│       ├── helpers/      # resolveOrgScope, canAccessOrg
+│       └── interfaces/   # RequestUser
+└── docker-compose.yml
 ```
 
-> **Note:** NX v22+ places projects at root level by default. This maps conceptually to the traditional `apps/` and `libs/` structure.
-
-### Shared Libraries
-
-| Library | Purpose |
-|---------|---------|
-| `data`  | TypeScript interfaces, DTOs, enums shared between frontend and backend |
-| `auth`  | RBAC decorators, guards, and permission logic (backend-focused, but types shared) |
-
-### Design Decisions
-
-- SQLite is used for local development to keep setup friction low. The data layer is structured so switching to PostgreSQL in production is straightforward.
-- RBAC logic lives in a shared `auth` library to keep authorization rules explicit and testable.
-- The application favors simplicity over abstraction for this challenge; tradeoffs and extensions are noted in the Future Improvements section.
-
----
-
-## Data Model
-
-### ERD
+## ERD
 
 ```mermaid
 erDiagram
-    USER ||--o{ TASK : owns
-    USER }o--|| ORGANIZATION : belongs_to
-    ORGANIZATION ||--o| ORGANIZATION : parent
+    Organization ||--o{ Organization : "parent → children"
+    Organization ||--o{ User : "has"
+    Organization ||--o{ Task : "scopes"
+    Organization ||--o{ AuditLog : "scopes"
+    User ||--o{ Task : "owns"
+    User ||--o{ AuditLog : "performed by"
 
-    USER {
+    Organization {
         uuid id PK
-        string email
-        string passwordHash
-        string role
+        varchar name
+        uuid parentId FK "null = parent org"
+    }
+
+    User {
+        uuid id PK
+        varchar email UK
+        varchar passwordHash
+        varchar role "OWNER | ADMIN | VIEWER"
         uuid organizationId FK
-        datetime createdAt
-        datetime updatedAt
     }
 
-    ORGANIZATION {
+    Task {
         uuid id PK
-        string name
-        uuid parentId FK
-        datetime createdAt
-    }
-
-    TASK {
-        uuid id PK
-        string title
-        string description
-        string status
-        string category
+        varchar title
+        text description
+        varchar status "TODO | IN_PROGRESS | DONE"
+        varchar category "WORK | PERSONAL"
         int position
         uuid ownerId FK
         uuid organizationId FK
-        datetime createdAt
-        datetime updatedAt
+    }
+
+    AuditLog {
+        uuid id PK
+        varchar action "CREATE | READ | UPDATE | DELETE"
+        varchar entityType
+        uuid entityId
+        uuid userId FK
+        uuid organizationId FK
+        boolean allowed
+        varchar ipAddress
+        timestamp createdAt
     }
 ```
 
-<!-- Permissions are derived from role enums in code rather than a separate table -->
+## RBAC Matrix
 
----
+| Action | OWNER | ADMIN | VIEWER |
+|--------|:-----:|:-----:|:------:|
+| `GET /api/tasks` | yes | yes | yes |
+| `POST /api/tasks` | yes | yes | no (403) |
+| `PUT /api/tasks/:id` | yes | yes | no (403) |
+| `DELETE /api/tasks/:id` | yes | yes | no (403) |
+| `GET /api/audit-log` | yes | yes | no (403) |
+| Access child org data | yes | no | no |
 
-## RBAC Rules
+All endpoints return **401** without a valid JWT.
 
-| Role   | Create Task | Read Task         | Update Task       | Delete Task       | View Audit Log |
-|--------|-------------|-------------------|-------------------|-------------------|----------------|
-| Owner  | Yes         | All in org + subs | All in org + subs | All in org + subs | Yes            |
-| Admin  | Yes         | All in own org    | All in own org    | All in own org    | Yes            |
-| Viewer | No          | Read-only access to tasks in own organization | No                | No                | No             |
+### Org Hierarchy Rules
 
-<!-- TODO: Confirm role inheritance and org hierarchy rules -->
+Organizations form a single-level parent/child tree:
 
----
+```
+Acme Corp (parent, parentId = null)
+├── Acme East (child, parentId = Acme Corp)
+└── Acme West (child, parentId = Acme Corp)
+```
+
+| User location | Role | Can see |
+|--------------|------|---------|
+| Parent org | OWNER | Own org + all child orgs |
+| Parent org | ADMIN | Own org only |
+| Parent org | VIEWER | Own org only |
+| Child org | any | Own org only (no upward access) |
 
 ## API Endpoints
 
-| Method | Endpoint       | Description                  | Auth Required | Roles Allowed       |
-|--------|----------------|------------------------------|---------------|---------------------|
-| POST   | `/auth/login`  | Authenticate user            | No            | —                   |
-| POST   | `/tasks`       | Create a new task            | Yes           | Owner, Admin        |
-| GET    | `/tasks`       | List accessible tasks        | Yes           | Owner, Admin, Viewer|
-| PUT    | `/tasks/:id`   | Update task                  | Yes           | Owner, Admin        |
-| DELETE | `/tasks/:id`   | Delete task                  | Yes           | Owner, Admin        |
-| GET    | `/audit-log`   | View access logs             | Yes           | Owner, Admin        |
+Base URL: `http://localhost:3000/api`
 
-<!-- TODO: Add sample request/response bodies -->
+### Auth
 
----
+```bash
+# Login
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"owner@acme.com","password":"password123"}'
+# → {"accessToken":"eyJhbG..."}
 
-## Frontend Features
-
-The frontend prioritizes clarity and correctness over visual polish for this challenge.
-
-- [ ] Login page with JWT authentication
-- [ ] Task dashboard with CRUD operations
-- [ ] Sort, filter, and categorize tasks (Work, Personal, etc.)
-- [ ] Drag-and-drop for reordering and status changes
-- [ ] Responsive design (mobile to desktop)
-- [ ] State management (TODO: choose solution)
-
-### Bonus (Optional)
-
-- [ ] Task completion visualization (bar chart)
-- [ ] Dark/light mode toggle
-- [ ] Keyboard shortcuts
-
----
-
-## CI/CD
-
-<!-- TODO: Add GitHub Actions workflow -->
-
-```yaml
-# .github/workflows/ci.yml
-# TODO: Define lint, test, build steps
+# Get current user
+curl http://localhost:3000/api/auth/me \
+  -H "Authorization: Bearer <token>"
+# → {"userId":"...","role":"OWNER","orgId":"..."}
 ```
 
----
+### Tasks
+
+```bash
+# List tasks (with optional filters)
+curl http://localhost:3000/api/tasks?status=TODO&category=WORK \
+  -H "Authorization: Bearer <token>"
+
+# Create task
+curl -X POST http://localhost:3000/api/tasks \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"New task","description":"Details","category":"WORK"}'
+
+# Update task
+curl -X PUT http://localhost:3000/api/tasks/<uuid> \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"DONE"}'
+
+# Delete task
+curl -X DELETE http://localhost:3000/api/tasks/<uuid> \
+  -H "Authorization: Bearer <token>"
+```
+
+### Audit Log
+
+```bash
+# List audit entries (OWNER/ADMIN only)
+curl http://localhost:3000/api/audit-log?limit=50 \
+  -H "Authorization: Bearer <token>"
+```
+
+## Audit Logging
+
+Every request to `/tasks` and `/audit-log` is automatically recorded by the `AuditInterceptor`:
+
+1. Interceptor extracts user, HTTP method, resource, and IP from the request
+2. HTTP method maps to an action: `POST`→CREATE, `GET`→READ, `PUT`→UPDATE, `DELETE`→DELETE
+3. On success, logs with `allowed: true`
+4. On error (403, 404, etc.), logs with `allowed: false`
+5. Entries are org-scoped: OWNER in a parent org sees logs from child orgs too
+
+Each audit entry records: who (userId), what (action + entityType + entityId), where (organizationId + ipAddress), and whether it was allowed.
+
+## Seed Users
+
+| Email | Password | Role | Org |
+|-------|----------|------|-----|
+| `owner@acme.com` | `password123` | OWNER | Acme Corp (parent) |
+| `admin@east.acme.com` | `password123` | ADMIN | Acme East (child) |
+| `viewer@east.acme.com` | `password123` | VIEWER | Acme East (child) |
+
+## Testing
+
+```bash
+# Run all tests
+npx nx run-many -t test --projects=api,auth
+
+# API tests (14 cases: JWT 401s, RBAC 403s, admin allowed, audit-log RBAC, cross-org denial)
+npx nx test api
+
+# Auth library tests (10 cases: resolveOrgScope, canAccessOrg, getOrgIdsForQuery)
+npx nx test auth
+```
+
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml` runs on push/PR to `main`:
+
+1. `npm ci` with npm cache
+2. `npx nx run-many -t lint` — lint all projects
+3. `npx nx run-many -t test --projects=api,auth` — 24 tests
+4. `npx nx run-many -t build --projects=api,dashboard` — production builds
 
 ## Docker
 
-<!-- TODO: Add Dockerfile and docker-compose.yml -->
-
-```dockerfile
-# TODO: Multi-stage build for API
-# TODO: Nginx for Angular static files
+```bash
+docker-compose up --build
 ```
 
----
+| Service | Port | Image |
+|---------|------|-------|
+| `api` | 3000 | node:20-alpine (multi-stage) |
+| `dashboard` | 4200 | nginx:alpine (serves static + proxies `/api/` to api container) |
 
-## Future Improvements
-
-- JWT refresh tokens
-- CSRF protection
-- RBAC permission caching for performance
-- Advanced role delegation
-- Rate limiting
-- Pagination for tasks and audit logs
-- WebSocket for real-time task updates
-- Production database (PostgreSQL)
-
----
-
-## License
-
-<!-- TODO: Add license if needed -->
+SQLite data persists in a Docker named volume (`api-data`).
